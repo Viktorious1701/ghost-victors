@@ -1,6 +1,6 @@
 # Phase 0: Data & state
 
-> **FR:** FR-2.2, FR-2.4 · **AC:** none (SRS ACs are gameplay — phases 2–4; phase-level P0-AC1…3 below) · **NFR:** NFR-2 · **Hooks:** none (only a compile-anchor `#include` in `main.cpp`) · **SDS:** §2.1, §2.2, §4.2.A · **Status:** in-progress · **Branch:** n/a (no git repo) · **Commit:** n/a
+> **FR:** FR-2.2, FR-2.4 · **AC:** none (SRS ACs are gameplay — phases 2–4; phase-level P0-AC1…3 below) · **NFR:** NFR-2 · **Hooks:** none (only a compile-anchor `#include` in `main.cpp`) · **SDS:** §2.1, §2.2, §4.2.A · **Status:** ✅ done — build + in-game green · **Branch:** n/a (no git repo) · **Commit:** n/a
 > **Source specs:** `docs/SRS.md` · `docs/SDS.md` · **Spec:** `docs/plans/phase0-data-state.spec.md` · **Roadmap:** `CLAUDE.md#8-implementation-roadmap`
 
 **This phase delivers** the mod's data model — the packed `.gghost` binary structs and the
@@ -104,33 +104,34 @@ and written.
 | T04 | Correct `64 → 68` references | `CLAUDE.md`, `docs/plans/_TEMPLATE.plan.md` |
 | T05 | `geode build` → green | — |
 
-- [x] T01 [x] T02 [x] T03 [x] T04 [ ] T05 *(build pending — no toolchain in dev env; run on your machine)*
+- [x] T01 [x] T02 [x] T03 [x] T04 [x] T05 *(build green on user's machine — VS 2022 / MSVC)*
 
 ## 12. Definition of Done (gate)
 
 **Universal gate:**
-- [ ] `geode build` succeeds, no errors.
-- [ ] Mod loads in GD 2.2081; no crash on menu / level entry / exit.
-- [ ] No regression — gameplay unchanged with the mod active.
-- [ ] `static_assert(sizeof(ReplayHeader)==68)` and `sizeof(FrameData)==17` pass.
-- [ ] All §11 tasks ticked and §14 File List filled.
-- [ ] NFR-2 respected by the 17-byte frame design.
+- [x] `geode build` succeeds, no errors.
+- [x] Mod loads in GD 2.2081; no crash on menu / level entry / exit.
+- [x] No regression — gameplay unchanged with the mod active.
+- [x] `static_assert(sizeof(ReplayHeader)==68)` and `sizeof(FrameData)==17` pass.
+- [x] All §11 tasks ticked and §14 File List filled.
+- [x] NFR-2 respected by the 17-byte frame design.
 
 **Phase-specific:**
-- [ ] P0-AC1 — struct sizes assert correctly (build proves it).
-- [ ] P0-AC2 — `GhostManager::get()` compiles + links from `main.cpp`.
-- [ ] P0-AC3 — mod loads, existing log lines still print, no behavior change.
+- [x] P0-AC1 — struct sizes assert correctly (build proves it).
+- [x] P0-AC2 — `GhostManager::get()` compiles + links from `main.cpp`.
+- [x] P0-AC3 — mod loads, existing log lines still print, no behavior change.
 
 ## 13. Verification
 
-- **Build:** `geode build` — **not run in the dev environment** (no cmake / geode CLI / `GEODE_SDK`
-  present). Awaiting build on the user's machine.
-- **Struct sizes:** verified by arithmetic — `ReplayHeader` = 4+2+4+32+16+6+4 = **68**;
-  `FrameData` = 4+4+4+4+1 = **17**. The `static_assert`s will confirm this at compile time.
-- **In-game runtime** (GD 2.2081): pending — mod should load, the `GhostManager ready (active victor:
-  false)` log line should print in `PlayLayer::init`, and entering a level should behave exactly as
-  before. `<result: pending user test>`
-- **Note:** the two `static_assert`s are the only automated check; the rest is manual/in-game.
+- **Build:** ✅ `geode build` green on the user's machine (Visual Studio 17 2022 / MSVC `cl.exe`
+  14.44, toolset v143; Geode SDK 5.8.2, CLI 3.8.0, GD 2.2081). Since `main.cpp` includes both headers
+  with the `static_assert`s, the green build confirms `sizeof(ReplayHeader)==68` and
+  `sizeof(FrameData)==17`.
+- **In-game runtime** (GD 2.2081): ✅ confirmed on level "Deimos" (ID 52955167). Log showed all three
+  lines, including `Ghost Victors: GhostManager ready (active victor: false)`; no crash; gameplay
+  unchanged (the only WARN was from an unrelated mod).
+- **Note:** the two `static_assert`s are the only automated check; the rest was verified manually
+  in-game.
 
 ## 14. Dev Agent Record — File List
 

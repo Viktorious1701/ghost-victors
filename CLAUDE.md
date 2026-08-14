@@ -89,6 +89,11 @@ These are the details most likely to be implemented incorrectly. Get them exactl
   query sorts ascending by upload date (`sort=upload_asc`).
 - **Attempt reset sync** (SRS FR-1.5 / AC-06). On `resetLevel()`, the ghost snaps back to tick 0
   (opacity `0`, hidden) together with the player.
+- **Per-frame hook must be `PlayLayer::postUpdate`, not `PlayLayer::update`.** On Windows `PlayLayer`
+  has no own `update` (only macOS/iOS addresses in the bindings; the loop is `GJBaseGameLayer::update`),
+  so a `$modify(PlayLayer)::update` hook **silently never fires** there. Put per-frame telemetry capture
+  and (Phase 2) lerp/opacity in `PlayLayer::postUpdate` — a real PlayLayer override that fires every
+  frame. Read the per-physics-step counter as `GJBaseGameLayer::m_currentStep`.
 - **Pause toggle** (AC-08). The `PauseLayer` toggle flips `GhostManager::setGhostVisibleInPause`;
   `PlayLayer::update` must respect it and hide the ghost immediately when off.
 - **Non-functional budgets** (SRS §5): ghost update < 2% CPU/tick (keep 144/240Hz+ smooth); a
@@ -221,6 +226,11 @@ proven by a manual in-game walk of the listed AC-IDs against GD `2.2081`.
 - **Not under version control.** There is no `.git` directory yet. Initialize git if you want history
   before starting implementation.
 - **Verify GD bindings.** The SDS code is illustrative. Confirm exact member/method names against the
-  installed Geode `5.8.2` bindings while implementing (e.g. `getCurrentPercent()`,
-  `m_gameState->m_currentTick`, `m_isFrom0`, the particle/trail member names) — some may need
-  adjustment to compile.
+  installed Geode `5.8.2` bindings while implementing — some may need adjustment to compile. Verified
+  so far (from `geode-sdk/bindings` 2.2074, used by Geode 5.8.x): the physics step counter is
+  `GJBaseGameLayer::m_currentStep` (**not** `m_gameState->m_currentTick`, which does not exist); there
+  is **no `m_isFrom0`** — detect a from-0% run via `!m_isPracticeMode && m_startPosObject == nullptr`;
+  `GJGameLevel::m_levelID` is a `SeedValueRSV` (use `.value()` for the int); gamemode is read from
+  `PlayerObject` bool flags (`m_isShip`/`m_isBall`/`m_isBird`(UFO)/`m_isDart`(wave)/`m_isRobot`/
+  `m_isSpider`/`m_isSwing`, cube = all false). Still to confirm: the particle/trail member names
+  (Phase 2).
