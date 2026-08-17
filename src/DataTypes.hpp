@@ -41,8 +41,18 @@ struct FrameData {
     float x;             // World X position
     float y;             // World Y position
     float rotation;      // Rotation angle in degrees
-    uint8_t gameMode;    // Active gamemode enum (0=Cube, 1=Ship, 2=Ball, ...)
+    uint8_t gameMode;    // Packed appearance byte (see below)
 };
+
+// FrameData::gameMode bit layout (packed to avoid growing FrameData / breaking the format):
+//   bits 0-3 : gamemode enum (0=Cube,1=Ship,2=Ball,3=UFO,4=Wave,5=Robot,6=Spider,7=Swing)
+//   bit  4   : upside-down / gravity flipped
+//   bit  5   : mini size
+//   bits 6-7 : reserved
+// Old v1 files only ever wrote 0-7, so the high bits read as 0 (= normal) — fully backward compatible.
+#define GV_GAMEMODE_MASK   0x0F
+#define GV_FLAG_UPSIDEDOWN 0x10
+#define GV_FLAG_MINI       0x20
 
 #pragma pack(pop)
 

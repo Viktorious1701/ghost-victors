@@ -187,6 +187,14 @@ inline void applyGhostOpacityStateMachine(PlayerObject* ghost, float currentPerc
 
 ### 3.3 Position Interpolation Mathematics (`lerp`)
 
+> **Implementation note (Phase 2, DP12):** the shipped engine indexes keyframes by the player's
+> **X-progress**, not by tick/time. Time-indexing drifts (the lead wanders → acceleration/shake, worst
+> in mirror-portal sections which negate X). We binary-search frames by `x` for the player's current X,
+> advance by a lead (in frames), and lerp x/y/rotation around that index — the `lerp` math below still
+> applies, but `t` is derived from X-position, not `Tick`. Also, `FrameData.gameMode` is a **packed
+> byte** (bits 0-3 gamemode, bit 4 upside-down/gravity, bit 5 mini — DP11). See
+> `src/InterpolationEngine.hpp`.
+
 Because GD framerates vary (60Hz, 144Hz, 240Hz, 360Hz), the ghost playback position between two keyframes $A$ and $B$ is calculated using linear interpolation:
 
 $$\vec{P}_{\text{ghost}} = \vec{P}_A + (\vec{P}_B - \vec{P}_A) \times t$$

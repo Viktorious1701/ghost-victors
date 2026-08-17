@@ -84,7 +84,15 @@ These are the details most likely to be implemented incorrectly. Get them exactl
   bytes**, magic = `GGST`. `FrameData` is **exactly 17 bytes** (`tick` u32, `x`/`y`/`rotation` f32,
   `gameMode` u8). **Verify the magic on load** and reject mismatches. Do not change struct layout
   without bumping `formatVersion`. (SDS §2.1's diagram says 64 B, but §2.2's 8 icon IDs make the real
-  packed size 68 B — decision D1 in `docs/plans/phase0-data-state.plan.md`.)
+  packed size 68 B — decision D1 in `docs/plans/phase0-data-state.plan.md`.) The `gameMode` byte is
+  **packed**: bits 0-3 = gamemode enum, bit 4 = upside-down/gravity, bit 5 = mini (Phase 2 DP11); old
+  files have the high bits 0 (= normal), so it stays backward-compatible.
+- **Ghost playback is X-progress-indexed, not time-indexed** (Phase 2 DP12). Drive the ghost off the
+  player's actual `getPositionX()` (+ a lead in frames), not an accumulated-`dt` tick — GD position is a
+  function of X, and time-indexing drifts (causes acceleration/shake, worst under mirror portals which
+  negate X). See `src/InterpolationEngine.hpp::updateGhostByProgress`. **Mirror-transition damping**
+  (Phase 2 DP13): a *leading* ghost is off the flip pivot and swings off-screen while GD animates a
+  mirror flip, so scale the lead by `min(1, |m_objectLayer->getScaleX()|)` (→0 mid-flip).
 - **Upload-order ranking** (SRS FR-4.2). The first player to upload a run for a level is `#1`. API
   query sorts ascending by upload date (`sort=upload_asc`).
 - **Attempt reset sync** (SRS FR-1.5 / AC-06). On `resetLevel()`, the ghost snaps back to tick 0
@@ -194,6 +202,22 @@ Ordered so each phase is independently buildable and testable. Each phase gets i
   download to local cache, with offline fallback to a cached `.gghost`. Validate **AC-05, AC-07**.
   → `docs/plans/phase4-network.plan.md`
 - Split `main.cpp` hooks into `src/hooks/*.cpp` per §6 as they grow.
+- **Phase 5 — Replay / Spectate & Compare (future, post-Phase 4).** A separate **time-driven,
+  no-live-player** mode built on the same position-based `.gghost`:
+  - *Standalone replay* — watch a recorded run without playing: drive the ghost by an internal time
+    clock (tick-indexed), with the **camera following the replay** and the live player hidden/frozen.
+  - *Overlay / compare* — load **2+ runs**, drive them all off one shared clock at **true tick (no
+    lead)** to compare how two players' paths/timing differ.
+  - **Full visuals here** (particles, wave trail, boost, etc.) — do **not** strip. Stripping becomes
+    **mode-dependent**: the live play-along racing ghost stays **icon-only** (§4 / AC-04); the spectate
+    ghosts render full.
+  - New work: a **time-indexed playback path** alongside the X-progress engine; **multi-ghost**
+    (generalize `GhostManager` from one loaded run to N); **camera control** (the main risk — puppet the
+    camera along the replay, or puppet+hide the real player); a spectate entry point; and **actually
+    driving the ghost's `update`/animation so trails+particles emit** (they don't under pure
+    `setPosition`).
+  - Note: click-pattern **analytics** (Zoink vs Doggie input comparison) still needs the deferred
+    **input-event track** (spec D3) — the *visual* overlay works with position data today.
 
 ### Definition of Done
 
@@ -225,6 +249,8 @@ proven by a manual in-game walk of the listed AC-IDs against GD `2.2081`.
   before any release.
 - **Not under version control.** There is no `.git` directory yet. Initialize git if you want history
   before starting implementation.
+- **Replay / Spectate & Compare** is a planned **future phase** (see §8 "Phase 5") — watch a run
+  without playing + overlay two runs to compare, with full visuals and camera-follow. Not started.
 - **Verify GD bindings.** The SDS code is illustrative. Confirm exact member/method names against the
   installed Geode `5.8.2` bindings while implementing — some may need adjustment to compile. Verified
   so far (from `geode-sdk/bindings` 2.2074, used by Geode 5.8.x): the physics step counter is

@@ -1,5 +1,5 @@
 {
-	"geode": "5.8.2",
+	"geode": "5.9.0",
 	"gd": {
 		"win": "2.2081",
 		"android": "2.2081",
@@ -11,6 +11,16 @@
 	"version": "v1.0.0",
 	"developer": "Vikkie",
 	"description": "",
+	"settings": {
+		"ghost-lead": {
+			"type": "float",
+			"name": "Ghost lead (seconds)",
+			"description": "How far ahead of you the ghost plays. 0 = synchronized (overlaps you); higher = the ghost leads to your right as a pacer to chase.",
+			"default": 0.5,
+			"min": 0.0,
+			"max": 3.0
+		}
+	},
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
 	}
