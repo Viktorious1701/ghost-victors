@@ -24,8 +24,9 @@ opacity fade → **share/fetch** via REST.
 | **1 — Recording** | capture telemetry → `.gghost` on completion; gated to Normal/from-0 % | ✅ Done (records ~60 Hz, save+reload verified in-game) |
 | **2 — Playback** | icon-only ghost, X-progress lerp, opacity fade, reset sync, leading pacer, gravity/mini | ✅ Done (in-game verified: gravity flip, mini, mirror-damped lead, correct icon) |
 | **3 — UI** | "Victors" button in `LevelInfoLayer` + `PauseLayer` hide/show toggle | ⏳ Next |
-| **4 — Network + cache** | async fetch (upload-order), download cache, offline fallback | ⏳ Not started (REST API URL still undefined) |
-| **5 — Replay / Spectate & Compare** | watch a run without playing + overlay two runs (full visuals, camera-follow) | ⏳ Future (post-Phase 4) |
+| **4 — Victors Platform (Supabase)** | P4a backend (`runs` table + storage + `submit` fn) · P4b client fetch/cache/offline + Bot badges + submit · P6 macro seeding ("Bot Vikkie") | ⏳ Next (design: `docs/plans/victors-platform.design.md`) |
+| **7 — Legit verification** | submission form (YouTube + Drive raw footage) + Vikkie review; AREDL top-300 rule | ⏳ Deferred (columns reserved) |
+| **5 — Replay / Spectate & Compare** | watch a run without playing + overlay two runs (full visuals, camera-follow) | ⏳ Future |
 
 Each phase has a spec + plan under `docs/plans/phase{N}-*.{spec,plan}.md`.
 

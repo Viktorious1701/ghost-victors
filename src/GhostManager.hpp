@@ -19,6 +19,12 @@ private:
     std::vector<FrameData> m_recordingBuffer;
     bool m_isGhostVisibleInPause = true;
 
+    // Phase 3: the run the player picked in the Victors popup, per level.
+    // has_value() + empty string = explicit "no ghost"; has_value() + path = load that file;
+    // nullopt = no explicit choice → PlayLayer defaults to the most recent run.
+    int m_selectedLevelID = 0;
+    std::optional<std::string> m_selectedRunPath;
+
 public:
     // Single global instance — non-copyable, non-movable.
     GhostManager(const GhostManager&) = delete;
@@ -40,4 +46,16 @@ public:
 
     bool isGhostVisibleInPause() const { return m_isGhostVisibleInPause; }
     void setGhostVisibleInPause(bool visible) { m_isGhostVisibleInPause = visible; }
+
+    // Phase 3 (DP16): per-level selected run. Pass an empty path to mean "no ghost".
+    void setSelectedRun(int levelID, const std::string& path) {
+        m_selectedLevelID = levelID;
+        m_selectedRunPath = path;
+    }
+    void clearSelectedRun() { m_selectedRunPath.reset(); }
+    // Returns the chosen path (may be empty = "none") if a choice was made for this level, else nullopt.
+    std::optional<std::string> getSelectedRunFor(int levelID) const {
+        if (m_selectedRunPath.has_value() && m_selectedLevelID == levelID) return m_selectedRunPath;
+        return std::nullopt;
+    }
 };

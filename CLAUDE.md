@@ -198,9 +198,16 @@ Ordered so each phase is independently buildable and testable. Each phase gets i
 - **Phase 3 — UI.** `LevelInfoLayerHook` "Victors" button + popup; `PauseLayerHook` hide/show toggle
   wired to `GhostManager::setGhostVisibleInPause`. Validate **AC-08**.
   → `docs/plans/phase3-ui.plan.md`
-- **Phase 4 — Network + cache.** `NetworkManager` async fetch (upload-order ranking) and replay
-  download to local cache, with offline fallback to a cached `.gghost`. Validate **AC-05, AC-07**.
-  → `docs/plans/phase4-network.plan.md`
+- **Phase 4 — Network + cache (Supabase-backed "Victors Platform").** Expanded from the SRS's generic
+  REST plan into a Supabase service — see `docs/plans/victors-platform.design.md`. Sub-phases:
+  - **P4a — Backend & data model:** Supabase `runs` table (with reserved verification columns), storage
+    bucket, RLS, `submit` Edge Function. (Server-side, not the mod.)
+  - **P4b — Client networking:** `NetworkManager` async fetch (upload-order ranking, AC-05) + download
+    to local cache + offline fallback (AC-07) + **source badges** (🤖 Bot) + submit path.
+  - **P6 — Seeding:** "allow practice/macro recording" setting + **Bot Vikkie** upload + AREDL targets.
+  - **P7 — Verification & moderation (deferred):** submission form + Vikkie review + legit rule
+    (top-300 raw footage). Columns reserved now; workflow built later.
+  → `docs/plans/victors-platform.design.md`
 - Split `main.cpp` hooks into `src/hooks/*.cpp` per §6 as they grow.
 - **Phase 5 — Replay / Spectate & Compare (future, post-Phase 4).** A separate **time-driven,
   no-live-player** mode built on the same position-based `.gghost`:
@@ -240,10 +247,10 @@ proven by a manual in-game walk of the listed AC-IDs against GD `2.2081`.
 
 ## 9. Open items / TODO
 
-- **REST API base URL is undefined.** The SDS uses the placeholder
-  `https://your-api.com/api/v1/levels/{id}/victors?sort=upload_asc`. Decide the real endpoint and
-  wire it in — preferably as a **Geode mod setting** in `mod.json` rather than hardcoded — before
-  Phase 4 can work.
+- **REST API backend = Supabase** (decided; supersedes the SDS `https://your-api.com` placeholder).
+  See `docs/plans/victors-platform.design.md`. The Supabase **project URL + anon key** ship as **mod
+  settings** in `mod.json`; uploads go through a `submit` Edge Function (anon key only, never
+  `service_role`). Still to create: the Supabase project/table/bucket (P4a).
 - **Metadata is still template default.** `mod.json` `description` is empty; `about.md`,
   `changelog.md`, `support.md`, and `README.md` are unedited template placeholders. Fill these in
   before any release.

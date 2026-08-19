@@ -1,6 +1,5 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
-#include <Geode/modify/LevelInfoLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJAccountManager.hpp>
 #include <Geode/binding/PlayerObject.hpp>
@@ -15,6 +14,7 @@
 #include "InterpolationEngine.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <filesystem>
@@ -36,22 +36,27 @@ static uint8_t ghostCurrentGameMode(PlayerObject* p) {
     return 0;                    // Cube (all flags false)
 }
 
-// ==========================================
-// 1. Level Info Layer Hook (UI Button)
-// ==========================================
-class $modify(MyLevelInfoLayer, LevelInfoLayer) {
-    bool init(GJGameLevel* level, bool challenge) {
-        if (!LevelInfoLayer::init(level, challenge)) return false;
+// LevelInfoLayer "Victors" button lives in src/hooks/LevelInfoLayerHook.cpp (Phase 3, DP18).
 
-        log::info("Ghost Victors: Loaded LevelInfoLayer for level ID: {}", level->m_levelID);
-
-        // UI button setup will go here (Phase 3)
-        return true;
+// Newest .gghost in a level's replay folder (by last-write time), or empty if none.
+static std::filesystem::path ghostNewestRun(const std::filesystem::path& dir) {
+    std::error_code ec;
+    if (!std::filesystem::exists(dir, ec)) return {};
+    std::filesystem::path newest;
+    std::filesystem::file_time_type newestTime{};
+    for (auto const& entry : std::filesystem::directory_iterator(dir, ec)) {
+        if (ec) break;
+        if (!entry.is_regular_file() || entry.path().extension() != ".gghost") continue;
+        std::error_code tec;
+        const auto t = std::filesystem::last_write_time(entry.path(), tec);
+        if (tec) continue;
+        if (newest.empty() || t > newestTime) { newest = entry.path(); newestTime = t; }
     }
-};
+    return newest;
+}
 
 // ==========================================
-// 2. PlayLayer Hook (Recording — Phase 1, Playback — Phase 2)
+// PlayLayer Hook (Recording — Phase 1, Playback — Phase 2, selection/toggle — Phase 3)
 // ==========================================
 class $modify(GhostPlayLayer, PlayLayer) {
     struct Fields {
@@ -134,12 +139,24 @@ class $modify(GhostPlayLayer, PlayLayer) {
         GhostManager::get().clearActiveVictor();
 
         const int levelID = level ? level->m_levelID.value() : 0;
-        const auto path = Mod::get()->getSaveDir() / "replays"
-                          / fmt::format("{}.gghost", levelID);
+        const auto dir = Mod::get()->getSaveDir() / "replays" / std::to_string(levelID);
 
-        // No file yet (never recorded this level) is the normal first-play case — not an error.
+        // DP16: use the popup-selected run for this level; else default to the newest run.
+        // An explicit empty selection means "no ghost" for this level.
+        std::filesystem::path path;
+        if (auto sel = GhostManager::get().getSelectedRunFor(levelID)) {
+            if (sel->empty()) {
+                log::info("Ghost Victors: ghost disabled for this level (selected None)");
+                return;
+            }
+            path = *sel;
+        } else {
+            path = ghostNewestRun(dir);
+        }
+
+        // No file (never recorded / picked) is the normal first-play case — not an error.
         std::error_code ec;
-        if (!std::filesystem::exists(path, ec)) {
+        if (path.empty() || !std::filesystem::exists(path, ec)) {
             log::info("Ghost Victors: no saved ghost for this level yet");
             return;
         }
@@ -255,9 +272,13 @@ class $modify(GhostPlayLayer, PlayLayer) {
             }
         }
 
-        // --- Phase 2: ghost playback (X-progress lerp + mode/flip/mini + strip + opacity) ---
-        if (m_fields->m_isGhostActive && m_fields->m_ghost &&
-            GhostManager::get().isGhostVisibleInPause()) {
+        // --- Phase 2/3: ghost playback (X-progress lerp + mode/flip/mini + strip + opacity) ---
+        if (m_fields->m_isGhostActive && m_fields->m_ghost) {
+            // DP17: pause toggle — hide the ghost immediately when visibility is off (don't just skip).
+            if (!GhostManager::get().isGhostVisibleInPause()) {
+                m_fields->m_ghost->setVisible(false);
+                return;
+            }
             // DP12: drive the ghost by the player's actual X-progress (not accumulated time) so the
             // lead stays constant and there's no drift/shake (mirror-safe). DP8: leadFrames is the
             // pacer lead (ghost-lead seconds × ~60 Hz); 0 = tracks the player's exact X.
@@ -345,9 +366,12 @@ class $modify(GhostPlayLayer, PlayLayer) {
 
         header.totalFrames = static_cast<uint32_t>(buffer.size());
 
-        // --- Save (replays/<levelID>.gghost in the mod save dir) ---
-        const auto path = Mod::get()->getSaveDir() / "replays"
-                          / fmt::format("{}.gghost", levelID);
+        // --- Save (DP14: keep every run at replays/<levelID>/<timestamp>.gghost) ---
+        const auto stampMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::system_clock::now().time_since_epoch())
+                                 .count();
+        const auto path = Mod::get()->getSaveDir() / "replays" / std::to_string(levelID)
+                          / fmt::format("{}.gghost", stampMs);
 
         if (!ReplaySerializer::saveToFile(path, header, buffer)) {
             log::error("Ghost Victors: Recording save FAILED -> {}", path.string());
