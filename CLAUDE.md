@@ -258,6 +258,10 @@ proven by a manual in-game walk of the listed AC-IDs against GD `2.2081`.
   before starting implementation.
 - **Replay / Spectate & Compare** is a planned **future phase** (see §8 "Phase 5") — watch a run
   without playing + overlay two runs to compare, with full visuals and camera-follow. Not started.
+- **UI polish (deferred).** Victors popup: (1) show which run is **currently selected** (mark the row +
+  a "Now racing: <name>" line, and/or surface it on the level page) — real usability; (2) the "Victors"
+  button is a plain `ButtonSprite` — nicer icon/sprite (cosmetic). Do these in **one polish pass after
+  P6/P7** finalize the popup's content (bot runs, legit badges/filter), to avoid reworking.
 - **Verify GD bindings.** The SDS code is illustrative. Confirm exact member/method names against the
   installed Geode `5.8.2` bindings while implementing — some may need adjustment to compile. Verified
   so far (from `geode-sdk/bindings` 2.2074, used by Geode 5.8.x): the physics step counter is

@@ -67,6 +67,7 @@ class $modify(GhostPlayLayer, PlayLayer) {
         int m_ghostGameMode = 0;      // ghost's current vehicle mode (0=cube)
         bool m_isGhostActive = false; // a ghost is loaded & spawned for this level
         bool m_inMirrorFlip = false;  // diagnostic throttle for mirror-transition logging (DP13)
+        ReplayHeader m_ghostHeader{}; // recorded icon/color config for the loaded ghost (DP19)
     };
 
     // -------- Recording gate (FR-2.1): Normal Mode, from 0% (no StartPos) --------
@@ -101,28 +102,41 @@ class $modify(GhostPlayLayer, PlayLayer) {
         }
     }
 
+    // DP19: apply ONLY the current mode's icon (lazily). Setting all 8 up-front left the last-set
+    // (swing) sprite visible on a cube-start ghost. Called on spawn (cube) and every mode switch.
+    void ghostApplyIcon(int mode) {
+        auto g = m_fields->m_ghost;
+        if (!g) return;
+        const ReplayHeader& h = m_fields->m_ghostHeader;
+        switch (mode) {
+            case 1: g->updatePlayerShipFrame(h.shipID); break;
+            case 2: g->updatePlayerRollFrame(h.ballID); break;
+            case 3: g->updatePlayerBirdFrame(h.ufoID); break;
+            case 4: g->updatePlayerDartFrame(h.waveID); break;
+            case 5: g->updatePlayerRobotFrame(h.robotID); break;
+            case 6: g->updatePlayerSpiderFrame(h.spiderID); break;
+            case 7: g->updatePlayerSwingFrame(h.swingID); break;
+            default: g->updatePlayerFrame(h.cubeID); break;   // 0 = cube
+        }
+    }
+
     void ghostSetMode(int mode) {
         if (!m_fields->m_ghost || mode == m_fields->m_ghostGameMode) return;
         ghostToggleMode(m_fields->m_ghostGameMode, false); // leave the old mode
         ghostToggleMode(mode, true);                       // enter the new mode
+        ghostApplyIcon(mode);                              // show the right icon for this mode (DP19)
         m_fields->m_ghostGameMode = mode;
     }
 
-    // -------- Phase 2: apply recorded icons + colors to the ghost --------
+    // -------- Phase 2: apply recorded colors + the cube icon to the ghost (DP19: cube only up-front) --------
     void ghostConfigureAppearance(const ReplayHeader& h) {
         auto g = m_fields->m_ghost;
         if (!g) return;
-        g->updatePlayerFrame(h.cubeID);
-        g->updatePlayerShipFrame(h.shipID);
-        g->updatePlayerRollFrame(h.ballID);
-        g->updatePlayerBirdFrame(h.ufoID);
-        g->updatePlayerDartFrame(h.waveID);
-        g->updatePlayerRobotFrame(h.robotID);
-        g->updatePlayerSpiderFrame(h.spiderID);
-        g->updatePlayerSwingFrame(h.swingID);
+        m_fields->m_ghostHeader = h;                         // stored; per-mode icons applied lazily
         g->setColor(ccColor3B{h.color1_R, h.color1_G, h.color1_B});
         g->setSecondColor(ccColor3B{h.color2_R, h.color2_G, h.color2_B});
-        g->setCascadeOpacityEnabled(true); // so setOpacity reaches child icon sprites
+        g->setCascadeOpacityEnabled(true);                  // so setOpacity reaches child icon sprites
+        ghostApplyIcon(0);                                  // cube icon only (matches initial cube mode)
     }
 
     // -------- Phase 2: load the level's saved .gghost and spawn the ghost --------

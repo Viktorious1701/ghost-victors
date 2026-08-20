@@ -19,6 +19,36 @@
 			"default": 0.5,
 			"min": 0.0,
 			"max": 3.0
+		},
+		"enable-online": {
+			"type": "bool",
+			"name": "Online victors",
+			"description": "Fetch and upload victor ghosts from the online server. Turn off to use only local recordings.",
+			"default": true
+		},
+		"server-url": {
+			"type": "string",
+			"name": "Server URL",
+			"description": "Base URL of the Ghost Victors server (Supabase project URL). Leave default unless self-hosting.",
+			"default": "https://hlrrsctbapvcffpiiupy.supabase.co"
+		},
+		"server-anon-key": {
+			"type": "string",
+			"name": "Server anon key",
+			"description": "Public anon API key for the server. Safe to share; only change if self-hosting.",
+			"default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscnJzY3RiYXB2Y2ZmcGlpdXB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTkzMzgsImV4cCI6MjEwMjY5NTMzOH0.0wvTjmXUyr7EsTK57S6WN2xO6xyb5A5WdpVZZkPDhSo"
+		},
+		"seeding-mode": {
+			"type": "bool",
+			"name": "Seeding mode (admin)",
+			"description": "Upload your runs as official 'Bot Vikkie' seed ghosts instead of as yourself. Requires a valid admin key (below); the server rejects bot uploads without it. Leave off unless you are seeding.",
+			"default": false
+		},
+		"admin-key": {
+			"type": "string",
+			"name": "Admin key (private)",
+			"description": "Private key that authorizes seeding as 'Bot Vikkie'. Leave EMPTY - only the mod author sets this. When empty, all seeding UI is hidden and bot uploads are impossible.",
+			"default": ""
 		}
 	},
 	"dependencies": {
