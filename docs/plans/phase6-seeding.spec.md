@@ -72,13 +72,12 @@ Extends FR-4.x (upload/list) with an admin-gated bot source + AREDL metadata. No
 - ⚠ Confirm the Seeding-targets popup entry point (e.g. a button in the Victors popup / main menu, shown
   only when seeding mode is on) at gate 2.
 
-**P7 identity TODO (not decided now):** the uploaded `victor_name` is a client-chosen string the server
-trusts blindly — GD username uniqueness does not make it authentic (a raw POST or a patched client can
-claim any name). Harmless today because the name is **display/attribution only** (no badges, no trust).
-It only matters at **P7**, when a "legit" badge implies "verified completion by player X" and
-impersonation would count. At that point legit badges will need **proof the uploader owns the GD
-account** — evaluate options then (e.g. Argon challenge-response; never send raw GJP2). Add **no**
-identity proof in P6.
+**Identity note (resolved at P7 — no account check).** The uploaded `victor_name` is a client-chosen
+string the server trusts blindly, and GD username uniqueness doesn't make it authentic. This is
+**intentionally accepted**: names are display/attribution only, and P7 legit status is earned by a
+human review of submitted **YouTube + raw footage** (the footage is the proof), so faking a name never
+yields legit. No GD-account-ownership check is built in P6 **or** P7 (the earlier "evaluate Argon"
+idea was dropped). See `docs/plans/phase7-verification.spec.md`.
 
 **Out of scope:** legit verification/filter (P7), practice/StartPos capture, AREDL server-side caching,
 spectate (P5).

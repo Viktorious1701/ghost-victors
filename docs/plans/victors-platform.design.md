@@ -64,14 +64,21 @@ Optional `levels` cache table: `level_id`, `name`, `aredl_rank`, `aredl_top300` 
   target list** to know which demons to seed.
 - Honesty: bot ghosts are always badged **🤖 Bot** and never `legit`.
 
-## 6. Verification & moderation — ⏳ DEFERRED (later phase)
-Not built now. Schema columns above are **reserved** so this adds no migration. Until built, every run
-is `unverified` and shown by its `source` badge. When built:
-- **Submission form** (web, outside the mod): pick your uploaded run, give a **YouTube** link (always);
-  **Google-Drive raw footage** required when the level is **AREDL top-300**.
-- **Review:** Vikkie compares video ↔ run, sets `legit` / `rejected`.
-- Abuse controls: default `unverified`; RLS + rate limits; footage is **linked, never hosted**; never
-  ship the `service_role` key.
+## 6. Verification & moderation — 🔨 P7 (in progress)
+Schema columns above are **reserved** so this adds no migration. Every run is `unverified` until
+reviewed. Built in P7 (`docs/plans/phase7-verification.{spec,plan}.md`):
+- **Submission form — IN-MOD** (`LegitRequestPopup`): from the Victors popup, tap **"Request legit"** on
+  your online human run → enter a **YouTube** link (always) + **Google-Drive raw footage** (required iff
+  the level's AREDL `requires_raw_footage` is true) → the `request-legit` Edge Function stores the URLs;
+  the run stays `unverified`.
+- **Review — Supabase dashboard** (no admin UI): Vikkie compares video ↔ run and flips
+  `legit_status` = `legit` / `rejected` (+ `verified_by`/`verified_at`) via SQL. Queue = `unverified`
+  rows with a `youtube_url`.
+- **Client:** `legit` runs get a **LEGIT** badge + a **"Legit only"** filter in the Victors popup.
+- **Identity:** **no GD-account-ownership check** — the footage is the proof (faking a name never earns
+  legit). Argon dropped.
+- Abuse controls: default `unverified`; RLS + `service_role` server-side only; footage **linked, never
+  hosted**. (Rate-limiting on `submit`/`request-legit` is a deferred hardening item — `CLAUDE.md` §9.)
 
 ## 7. Build order
 **Now:** **P4a** backend & data model (Supabase project, `runs` table w/ reserved columns, storage,

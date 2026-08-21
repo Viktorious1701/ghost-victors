@@ -12,6 +12,7 @@
 #include "ReplaySerializer.hpp"
 #include "NetworkManager.hpp"
 #include "SeedingTargetsPopup.hpp"
+#include "LegitRequestPopup.hpp"
 
 #include <cstring>
 #include <filesystem>
@@ -33,6 +34,11 @@ protected:
     int m_levelID = 0;
     float m_listW = 0.f;
     ScrollLayer* m_scroll = nullptr;
+
+    // P7: "legit only" filter + cached last online state so the toggle re-renders without re-fetching.
+    bool m_legitOnly = false;
+    Online m_state = Online::Disabled;
+    std::vector<VictorMeta> m_online;
 
     bool initPopup(int levelID) {
         if (!Popup::init(380.f, 260.f)) return false;
@@ -73,6 +79,10 @@ protected:
     }
 
     void rebuild(Online state, std::vector<VictorMeta> const& online) {
+        // cache so the "legit only" toggle can re-render without another fetch
+        m_state = state;
+        if (&online != &m_online) m_online = online;
+
         auto content = m_scroll->m_contentLayer;
         content->removeAllChildren();
 
@@ -82,8 +92,15 @@ protected:
             if (state == Online::Loading) {
                 addLabelRow("Loading...");
             } else if (state == Online::Loaded) {
-                if (online.empty()) addLabelRow("No online victors yet");
-                for (auto const& v : online) addOnlineRow(v);
+                addFilterRow();
+                int shown = 0;
+                for (auto const& v : m_online) {
+                    if (m_legitOnly && v.legitStatus != "legit") continue;
+                    addOnlineRow(v);
+                    ++shown;
+                }
+                if (shown == 0)
+                    addLabelRow(m_legitOnly ? "No legit victors yet" : "No online victors yet");
             } else { // Failed
                 addLabelRow("(offline - showing downloaded)");
                 addCachedRows();
@@ -216,10 +233,26 @@ protected:
         m_scroll->m_contentLayer->addChild(row);
     }
 
-    // Online victor: Race downloads (or uses cache) then selects.
+    // P7: a toggle row that flips the "legit only" filter and re-renders the cached list.
+    void addFilterRow() {
+        auto row = newRow(26.f);
+        rowLabel(row, m_legitOnly ? "Showing: LEGIT only" : "Showing: all victors");
+        Ref<VictorsPopup> self = this;
+        rowButton(row, m_legitOnly ? "Show all" : "Legit only", 6.f, [self](CCMenuItemSpriteExtra*) {
+            self->m_legitOnly = !self->m_legitOnly;
+            self->rebuild(self->m_state, self->m_online);
+        });
+        m_scroll->m_contentLayer->addChild(row);
+    }
+
+    // Online victor: Race downloads (or uses cache) then selects. Legit rows are badged; human
+    // not-yet-legit rows get a "Legit?" button that opens the request form (P7).
     void addOnlineRow(VictorMeta const& v) {
         auto row = newRow();
-        const std::string tag = (v.source == "bot") ? " (BOT)" : "";
+        const bool isLegit = (v.legitStatus == "legit");
+        std::string tag;
+        if (v.source == "bot") tag += " (BOT)";
+        if (isLegit) tag += " [LEGIT]";
         rowLabel(row, v.victorName + tag + " - " + std::to_string(v.durationSec) + "s");
         const int lvl = m_levelID;
         Ref<VictorsPopup> self = this;
@@ -237,6 +270,13 @@ protected:
                 }
             });
         });
+        // Request legit: only for human runs that aren't already legit (bots are never legit).
+        if (v.source == "human" && !isLegit) {
+            const std::string runId = v.id;
+            rowButton(row, "Legit?", 60.f, [self, lvl, runId](CCMenuItemSpriteExtra*) {
+                if (auto p = LegitRequestPopup::create(runId, lvl)) p->show();
+            });
+        }
         m_scroll->m_contentLayer->addChild(row);
     }
 

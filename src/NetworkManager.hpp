@@ -258,4 +258,54 @@ namespace NetworkManager {
         }).detach();
     }
 
+    // ---- P7 legit verification ----
+
+    struct AredlMeta {
+        bool found = false;
+        int position = 0;
+        bool requiresRawFootage = false;
+    };
+
+    // Single-level AREDL lookup returning both the rank and the raw-footage rule (P7). Callback on main.
+    inline void fetchAredlMeta(int levelID, std::function<void(AredlMeta)> cb) {
+        const std::string url = std::string(kAredlBase) + "/levels/" + std::to_string(levelID);
+        std::thread([url, cb]() {
+            web::WebResponse res = web::WebRequest().getSync(url);
+            AredlMeta m;
+            if (res.ok()) {
+                auto parsed = res.json();
+                if (parsed) {
+                    auto obj = std::move(parsed).unwrap();
+                    m.position = static_cast<int>(obj["position"].asInt().unwrapOr(0));
+                    m.requiresRawFootage = obj["requires_raw_footage"].asBool().unwrapOr(false);
+                    m.found = m.position > 0;
+                }
+            }
+            queueInMainThread([cb, m]() { cb(m); });
+        }).detach();
+    }
+
+    // Attach a YouTube (+ optional raw-footage) link to a run for legit review (P7). The row stays
+    // 'unverified'; Vikkie flips it in the dashboard. Params like submit (URL-encoded query, no body).
+    inline void requestLegit(std::string runId, std::string youtube, std::string raw,
+                             std::function<void(bool, std::string)> cb) {
+        if (!enabled()) { cb(false, "online disabled"); return; }
+        const std::string endpoint = baseUrl() + "/functions/v1/request-legit";
+        const std::string key = anonKey();
+        std::thread([endpoint, key, runId, youtube, raw, cb]() {
+            auto req = web::WebRequest();
+            req.header("apikey", key)
+               .header("Authorization", "Bearer " + key)
+               .param("run_id", runId)
+               .param("youtube_url", youtube);
+            if (!raw.empty()) req.param("raw_footage_url", raw);
+
+            web::WebResponse res = req.postSync(endpoint);
+            const bool ok = res.ok();
+            std::string err;
+            if (!ok) err = "HTTP " + std::to_string(res.code()) + ": " + res.string().unwrapOr(std::string(""));
+            queueInMainThread([cb, ok, err]() { cb(ok, err); });
+        }).detach();
+    }
+
 } // namespace NetworkManager
