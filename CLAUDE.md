@@ -258,6 +258,12 @@ proven by a manual in-game walk of the listed AC-IDs against GD `2.2081`.
   before starting implementation.
 - **Replay / Spectate & Compare** is a planned **future phase** (see §8 "Phase 5") — watch a run
   without playing + overlay two runs to compare, with full visuals and camera-follow. Not started.
+- **`submit` hardening (deferred → P7 moderation).** From the pre-push security audit (2026-08-21):
+  the `submit` Edge Function has **no rate limiting**, so anon-key holders can spam ≤250 KB human
+  uploads — add a per-IP/per-level cap before wide distribution. Also the admin-key check uses `===`
+  (non-constant-time); switch to a constant-time compare. Neither is a secret leak (the repo is
+  push-clean: only the public **anon** key ships; `service_role`/`ADMIN_KEY`/DB password stay
+  off-repo), just abuse-resistance. File: `supabase/functions/submit/index.ts`.
 - **UI polish (deferred).** Victors popup: (1) show which run is **currently selected** (mark the row +
   a "Now racing: <name>" line, and/or surface it on the level page) — real usability; (2) the "Victors"
   button is a plain `ButtonSprite` — nicer icon/sprite (cosmetic). Do these in **one polish pass after
