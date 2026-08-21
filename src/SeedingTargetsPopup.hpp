@@ -67,17 +67,20 @@ protected:
             return;
         }
 
+        // The default list layout renders in reverse add-order (first-added ends up at the bottom),
+        // so add demons in DESCENDING position order → position 1 (hardest, e.g. Society) shows at top.
         std::sort(list.begin(), list.end(),
-                  [](AredlLevel const& a, AredlLevel const& b) { return a.position < b.position; });
+                  [](AredlLevel const& a, AredlLevel const& b) { return a.position > b.position; });
 
         int seededCount = 0;
         for (auto const& l : list) if (seeded.count(l.levelId)) ++seededCount;
-        addLabelRow("Seeded " + std::to_string(seededCount) + " / " + std::to_string((int)list.size()));
 
         for (auto const& l : list) {
             const bool isSeeded = seeded.count(l.levelId) > 0;
             addTargetRow(l, isSeeded);
         }
+        // added last → renders at the very top (above position 1).
+        addLabelRow("Seeded " + std::to_string(seededCount) + " / " + std::to_string((int)list.size()));
         content->updateLayout();
     }
 

@@ -176,7 +176,7 @@ sequenceDiagram
 | T06 | `submit`: admin-key check + reserved name + `aredl_rank` + CORS header | `supabase/functions/submit/index.ts` |
 | T07 | `geode build` green (user's Windows machine) | — |
 
-- [x] T01 [x] T02 [x] T03 [x] T04 [x] T05 [x] T06 [ ] T07 (user builds)
+- [x] T01 [x] T02 [x] T03 [x] T04 [x] T05 [x] T06 [x] T07 (built + installed 2026-08-20)
 
 ---
 
@@ -194,7 +194,7 @@ sequenceDiagram
 **Phase-specific — must pass in-game / server:**
 
 - [ ] P6-AC1 — bot upload with valid key → row `source=bot`, name "Bot Vikkie", BOT badge online.
-- [ ] P6-AC2 — bot upload without key → server 403 (verify via a keyless attempt / curl).
+- [x] P6-AC2 — bot upload without key → server **403** (curl-verified 2026-08-20).
 - [ ] P6-AC3 — Normal-mode macro records a `.gghost` (existing engine).
 - [ ] P6-AC4 — Seeding-targets lists AREDL `legacy:false` demons with seeded/unseeded marks.
 - [ ] P6-AC5 — seed on an AREDL level stores `aredl_rank` = position.
@@ -204,11 +204,13 @@ sequenceDiagram
 
 ## 13. Verification
 
-- **Build:** `geode build` green (user's Windows machine). `<result>`
-- **Server:** redeploy `submit`; `ADMIN_KEY` secret set. curl a bot upload without the key → 403; with
-  the key → 200 and a `source=bot` row. `<result>`
-- **In-game** (GD 2.2081): admin-key set → seeding UI appears; Seeding-targets lists demons w/ marks; a
-  macro seed uploads as Bot Vikkie with `aredl_rank`; empty-key build shows no seeding UI. `<result>`
+- **Build:** ✅ `geode build` green + installed on the user's Windows machine (2026-08-20).
+- **Server:** ✅ (2026-08-20) `submit` updated fn deployed; `ADMIN_KEY` secret set (SHA256 digest
+  `b01acb4ad0…`, mod key confirmed matching via local hash). curl `source=bot` **without** a key → **403
+  `admin key required for bot seeds`** (AC2 ✅); `source=human` → **200** `{id, gghost_path}`. A test row
+  (`level_id=12345`) + its `gghosts/12345/` blob were created and left for the user to delete.
+- **In-game** (GD 2.2081) — PENDING: admin-key set → seeding UI appears; Seed → Bot Vikkie (BOT) row +
+  `aredl_rank`; Seeding-targets lists demons w/ marks; empty-key build shows no seeding UI.
 - **Note:** no automated test harness — verification is manual/in-game + curl against the server.
 
 ---

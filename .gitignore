@@ -62,3 +62,6 @@ build-*/
 # CLion
 .idea/
 /cmake-build-*/
+
+# Supabase CLI local state (per-machine; regenerated on `supabase link`)
+supabase/.temp/
